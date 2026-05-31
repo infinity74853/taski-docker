@@ -1,0 +1,41 @@
+volumes:
+  pg_data:
+  static:
+
+services:
+  db:
+    image: postgres:15
+    env_file: .env
+    volumes:
+      - pg_data:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U django_user -d django"]
+      interval: 5s
+      timeout: 5s
+      retries: 5
+
+  backend:
+    build: ./backend/
+    env_file: .env
+    depends_on:
+      db:
+        condition: service_healthy
+    volumes:
+      - static:/backend_static
+
+  frontend:
+    build: ./frontend/
+    env_file: .env
+    volumes:
+      - static:/frontend_build
+
+  nginx:
+    image: nginx:1.25
+    ports:
+      - "80:80"
+    volumes:
+      - ./nginx.conf:/etc/nginx/conf.d/default.conf
+      - static:/usr/share/nginx/html/static
+    depends_on:
+      - backend
+      - frontend
