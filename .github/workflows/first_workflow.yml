@@ -1,4 +1,4 @@
-name: First Workflow
+name: CI/CD Pipeline
 
 on:
   push:
@@ -7,15 +7,30 @@ on:
     branches: [ main ]
 
 jobs:
-  test:
+  lint_and_test:
     runs-on: ubuntu-latest
     
     steps:
       - name: Checkout code
         uses: actions/checkout@v4
       
-      - name: Say hello
-        run: echo "Hello, CI/CD! Проект Taski готов к автоматизации!"
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
       
-      - name: Show current date
-        run: date
+      - name: Install dependencies
+        run: |
+          cd backend
+          pip install -r requirements.txt
+          pip install -r requirements-dev.txt
+      
+      - name: Run flake8 linter
+        run: |
+          cd backend
+          flake8 . --max-line-length=120 --exclude=migrations,venv
+      
+      - name: Run Django checks
+        run: |
+          cd backend
+          python manage.py check
